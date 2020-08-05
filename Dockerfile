@@ -1,24 +1,17 @@
-FROM jospring/centos8systemd
-#centos 8 software requirements
+FROM centos:8
 
 RUN yum clean all
-#RUN rm -rf /var/cache/yum
 RUN yum -y upgrade
 
-# Install required software for xdmod
 RUN yum -y install epel-release
+
+RUN yum -y install php-mysqlnd
 
 RUN yum -y install httpd php php-cli php-gd               gmp-devel php-gmp php-pdo php-xml               java-1.8.0-openjdk java-1.8.0-openjdk-devel               mariadb-server mariadb cronie logrotate               ghostscript php-mbstring php-pecl-apcu jq
 
-
-#Enable apache (httpd)
-RUN systemctl enable httpd.service
-
-#Install mysqlnd
-RUN yum -y install php-mysqlnd
-
-
-#XDMod dockerfile
+RUN yum -y install nano
+RUN yum -y install rpm-build
+RUN yum -y install wget
 
 RUN yum -y install expect
 RUN yum -y install gcc
@@ -40,12 +33,14 @@ RUN dnf -y install git
 RUN yum -y install php-pecl-json
 
 #Install composer and 
-RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-RUN php -r "if (hash_file('sha384', 'composer-setup.php') === 'e0012edf3e80b6978849f5eff0d4b4e4c79ff1609dd1e613307e16318854d24ae64f26d17af3ef0bf7cfb710ca74755a') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
-RUN php composer-setup.php
-RUN php -r "unlink('composer-setup.php');"
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && \
+    EXPECTED_SIGNATURE="$(wget -q -O - https://composer.github.io/installer.sig)" && \
+    ACTUAL_SIGNATURE="$(php -r "echo hash_file('SHA384', 'composer-setup.php');")" && \
+    if [ "$EXPECTED_SIGNATURE" != "$ACTUAL_SIGNATURE" ]; then echo 'ERROR: Invalid composer signature'; exit 1; fi && \
+    php composer-setup.php --install-dir=/bin --filename=composer && \
+    php -r "unlink('composer-setup.php');"
 
-RUN mv composer.phar /usr/local/bin/composer
+#RUN mv composer.phar /usr/local/bin/composer
 
 RUN sed -i 's/.*date.timezone[[:space:]]*=.*/date.timezone = UTC/' /etc/php.ini && \
     sed -i 's/.*memory_limit[[:space:]]*=.*/memory_limit = -1/' /etc/php.ini
@@ -61,13 +56,6 @@ RUN sed -ie 's/inet_interfaces = localhost/#inet_interfaces = localhost/' /etc/p
     echo 'virtual_alias_maps = regexp:/etc/postfix/virtual' >> /etc/postfix/main.cf && \
     newaliases
 
-
-
-RUN yum -y install nano
-RUN yum -y install rpm-build
-RUN yum -y install wget
-
 EXPOSE 8081
 EXPOSE 3308
 
-CMD ["/usr/sbin/init"]
