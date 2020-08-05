@@ -1,17 +1,20 @@
 FROM centos:8
 
+#Installs the software requirements for installing xdmod
 RUN yum clean all
 RUN yum -y upgrade
 
 RUN yum -y install epel-release
 
+#replace mysql with mysqlnd
 RUN yum -y install php-mysqlnd
 
 RUN yum -y install httpd php php-cli php-gd               gmp-devel php-gmp php-pdo php-xml               java-1.8.0-openjdk java-1.8.0-openjdk-devel               mariadb-server mariadb cronie logrotate               ghostscript php-mbstring php-pecl-apcu jq
 
-RUN yum -y install nano
 RUN yum -y install rpm-build
 RUN yum -y install wget
+
+#bellow based on centos 7 dockerfile. Installs git, JSON, composer, and postfix
 
 RUN yum -y install expect
 RUN yum -y install gcc
